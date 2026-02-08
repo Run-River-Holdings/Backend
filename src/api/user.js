@@ -9,10 +9,15 @@ router.post("/signup", async (req, res) => {
     const result = await signUp(req.body);
     return res.status(result.status).json(result);
   } catch (err) {
-    console.error("signup error:", err); // ✅ full error
-    return res.status(500).json({ ok: false, message: "Internal server error" });
+    console.error("signup error:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 });
+
 
 // ✅ SIGNIN
 router.post("/signin", async (req, res) => {

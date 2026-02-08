@@ -2,17 +2,32 @@ import nodemailer from "nodemailer";
 
 export const sendOTPEmail = async (toEmail, otp) => {
   try {
+    // ✅ Validate envs first (this prevents silent failures)
+    const host = process.env.SMTP_HOST;
+    const port = Number(process.env.SMTP_PORT || 587);
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    const from = process.env.SMTP_FROM || user;
+
+    if (!host || !user || !pass) {
+      return {
+        ok: false,
+        error: "SMTP env missing: SMTP_HOST / SMTP_USER / SMTP_PASS",
+      };
+    }
+
+    // ✅ Gmail on hosts sometimes needs TLS config
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: Number(process.env.SMTP_PORT) === 465, // true for 465, false for 587
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+      host,
+      port,
+      secure: port === 465, // 465 true, 587 false
+      auth: { user, pass },
+
+      // ✅ helps when Render/hosting has TLS handshake issues
+      tls: {
+        rejectUnauthorized: false,
       },
     });
-
-    const from = process.env.SMTP_FROM || process.env.SMTP_USER;
 
     const info = await transporter.sendMail({
       from,
@@ -33,7 +48,8 @@ export const sendOTPEmail = async (toEmail, otp) => {
 
     return { ok: true, messageId: info.messageId };
   } catch (err) {
-    console.error("sendOTPEmail error:", err.message);
-    return { ok: false, error: err.message };
+    // ✅ log full error (very important)
+    console.error("sendOTPEmail error:", err);
+    return { ok: false, error: err.message || "Email sending failed" };
   }
 };
