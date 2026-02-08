@@ -20,20 +20,22 @@ dotenv.config();
 const app = express();
 
 /* =======================
-   ✅ CORS – LAN Friendly
+   ✅ BODY PARSER
+======================= */
+app.use(express.json());
+
+/* =======================
+   ✅ CORS (Render Ready)
+   - For now allow all (easy)
+   - Later you can restrict to your frontend domain
 ======================= */
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://192.168.8.107:5173", // 👈 frontend network IP
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: true, // ✅ allow all origins automatically
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   })
 );
-
-app.use(express.json());
 
 /* =======================
    ✅ Database
@@ -59,19 +61,18 @@ app.use("/api/assets", assetRouter);
 app.use("/api/investment", investmentRouter);
 
 /* =======================
-   ✅ Test Route
+   ✅ Test / Health Route
 ======================= */
 app.get("/", (req, res) => {
-  res.send("🚀 Loan Service API running");
+  res.send("🚀 Loan Service API running (Render Ready)");
 });
 
 /* =======================
-   ✅ IMPORTANT PART
-   Listen on ALL interfaces
+   ✅ IMPORTANT (Render)
+   Render gives PORT in env
 ======================= */
-const PORT = 5000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on:`);
-  console.log(`👉 Local   : http://localhost:${PORT}`);
-  console.log(`👉 Network : http://192.168.8.107:${PORT}`);
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port: ${PORT}`);
 });
