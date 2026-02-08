@@ -1,6 +1,7 @@
+// src/index.js
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import connectDB from "./infastructure/db.js";
 
 import dashboardRouter from "./api/dashboard.js";
@@ -15,32 +16,25 @@ import customerPaymentHistoryRouter from "./api/customerPaymentHistory.js";
 import brokerPaymentHistoryRouter from "./api/brokerpaymentHistory.js";
 import userRouter from "./api/user.js";
 
-dotenv.config();
-
 const app = express();
 
 /* =======================
-   ✅ BODY PARSER
-======================= */
-app.use(express.json());
-
-/* =======================
-   ✅ CORS (Render Ready)
-   - For now allow all (easy)
-   - Later you can restrict to your frontend domain
+   ✅ CORS
+   - local + deployed frontend support
+   - set FRONTEND_URL in Render/Netlify env if you want strict CORS
 ======================= */
 app.use(
   cors({
-    origin: true, // ✅ allow all origins automatically
+    origin: process.env.FRONTEND_URL || true, // true = allow all (temporary)
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   })
 );
 
 /* =======================
-   ✅ Database
+   ✅ BODY PARSER
 ======================= */
-connectDB();
+app.use(express.json());
 
 /* =======================
    ✅ Routes
@@ -68,11 +62,15 @@ app.get("/", (req, res) => {
 });
 
 /* =======================
-   ✅ IMPORTANT (Render)
-   Render gives PORT in env
+   ✅ Database
 ======================= */
-const PORT = process.env.PORT || 5000;
+connectDB();
+
+/* =======================
+   ✅ IMPORTANT (Render)
+======================= */
+const PORT =  5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port: ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
