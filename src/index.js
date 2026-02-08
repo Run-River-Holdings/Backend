@@ -19,32 +19,22 @@ import userRouter from "./api/user.js";
 const app = express();
 
 /* =======================
-   ✅ BODY PARSER
-======================= */
-app.use(express.json());
-
-/* =======================
-   ✅ CORS (ENV BASED)
+   ✅ CORS
+   - local + deployed frontend support
+   - set FRONTEND_URL in Render/Netlify env if you want strict CORS
 ======================= */
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-
-      if (origin === process.env.FRONTEND_URL) {
-        return callback(null, true);
-      }
-
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
-    },
+    origin: process.env.FRONTEND_URL || true, // true = allow all (temporary)
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// ✅ Express 5 FIX: use RegExp instead of "*"
-app.options(/.*/, cors());
+/* =======================
+   ✅ BODY PARSER
+======================= */
+app.use(express.json());
 
 /* =======================
    ✅ Routes
@@ -65,7 +55,7 @@ app.use("/api/assets", assetRouter);
 app.use("/api/investment", investmentRouter);
 
 /* =======================
-   ✅ Health
+   ✅ Test / Health Route
 ======================= */
 app.get("/", (req, res) => {
   res.send("🚀 Loan Service API running (Render Ready)");
