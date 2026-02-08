@@ -12,13 +12,12 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
     },
 
-    password: { type: String, required: true },
+    password: { type: String, required: true, select: false },
 
-    // ✅ Email verification
     isEmailVerified: { type: Boolean, default: false },
 
-    otp: { type: String, default: null },
-    otpExpiresAt: { type: Date, default: null },
+    otp: { type: String, default: null, select: false },
+    otpExpiresAt: { type: Date, default: null, select: false },
   },
   { timestamps: true }
 );

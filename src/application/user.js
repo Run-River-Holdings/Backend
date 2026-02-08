@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../infastructure/schemas/user.js";
 import { generateOTP } from "../api/utils/generateOTP.js";
@@ -7,10 +7,11 @@ import { sendOTPEmail } from "../api/utils/emailService.js";
 const OTP_EXPIRE_MINUTES = 10;
 
 const signToken = (userId) => {
+  if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET is missing in env");
   return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
-// ✅ SIGNUP (name, email, password, confirmPassword)
+// ✅ SIGNUP
 export const signUp = async ({ name, email, password, confirmPassword }) => {
   if (!name || !email || !password || !confirmPassword) {
     return { ok: false, status: 400, message: "All fields are required" };
@@ -19,7 +20,9 @@ export const signUp = async ({ name, email, password, confirmPassword }) => {
     return { ok: false, status: 400, message: "Passwords do not match" };
   }
 
-  const exist = await User.findOne({ email: email.toLowerCase() });
+  const emailLower = String(email).toLowerCase().trim();
+
+  const exist = await User.findOne({ email: emailLower });
   if (exist) {
     return { ok: false, status: 409, message: "Email already exists" };
   }
@@ -31,16 +34,16 @@ export const signUp = async ({ name, email, password, confirmPassword }) => {
 
   const user = await User.create({
     name,
-    email,
+    email: emailLower,
     password: hashed,
     isEmailVerified: false,
     otp,
     otpExpiresAt,
   });
 
+  // ✅ Most 500 errors come from SMTP here
   const emailRes = await sendOTPEmail(user.email, otp);
   if (!emailRes.ok) {
-    // still created user, but email failed
     return {
       ok: false,
       status: 500,
@@ -57,13 +60,15 @@ export const signUp = async ({ name, email, password, confirmPassword }) => {
   };
 };
 
-// ✅ SIGNIN (email, password) - you said "signin(name,email,password)" but signin should use email+password
+// ✅ SIGNIN
 export const signIn = async ({ email, password }) => {
   if (!email || !password) {
     return { ok: false, status: 400, message: "Email and password are required" };
   }
 
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const emailLower = String(email).toLowerCase().trim();
+
+  const user = await User.findOne({ email: emailLower }).select("+password");
   if (!user) return { ok: false, status: 401, message: "Invalid credentials" };
 
   const match = await bcrypt.compare(password, user.password);
@@ -96,13 +101,15 @@ export const signIn = async ({ email, password }) => {
   };
 };
 
-// ✅ VERIFY EMAIL (email, otp)
+// ✅ VERIFY EMAIL
 export const verifyEmail = async ({ email, otp }) => {
   if (!email || !otp) {
     return { ok: false, status: 400, message: "Email and OTP are required" };
   }
 
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const emailLower = String(email).toLowerCase().trim();
+
+  const user = await User.findOne({ email: emailLower });
   if (!user) return { ok: false, status: 404, message: "User not found" };
 
   if (user.isEmailVerified) {
@@ -113,8 +120,7 @@ export const verifyEmail = async ({ email, otp }) => {
     return { ok: false, status: 400, message: "No OTP found. Please resend OTP." };
   }
 
-  const expired = new Date() > new Date(user.otpExpiresAt);
-  if (expired) {
+  if (new Date() > new Date(user.otpExpiresAt)) {
     return { ok: false, status: 400, message: "OTP expired. Please resend OTP." };
   }
 
@@ -130,11 +136,13 @@ export const verifyEmail = async ({ email, otp }) => {
   return { ok: true, status: 200, message: "Email verified successfully" };
 };
 
-// ✅ RESEND OTP (email)
+// ✅ RESEND OTP
 export const resendOTP = async ({ email }) => {
   if (!email) return { ok: false, status: 400, message: "Email is required" };
 
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const emailLower = String(email).toLowerCase().trim();
+
+  const user = await User.findOne({ email: emailLower });
   if (!user) return { ok: false, status: 404, message: "User not found" };
 
   if (user.isEmailVerified) {
