@@ -25,17 +25,17 @@ const app = express();
 /* =======================
    ✅ CORS – LAN Friendly
 ======================= */
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://192.168.8.107:5173",
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: process.env.FRONTEND_URL || true,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
+app.options(/.*/, cors());
 app.use(express.json());
 
 /* =======================
